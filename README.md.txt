@@ -1,1 +1,0 @@
-##Mitigation - Introduction to cyber-physical systems
