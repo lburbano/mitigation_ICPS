@@ -43,7 +43,7 @@ class Estimator():
             self.estimator = System(self.a, self.b, self.xp, self.state_dimension, self.input_dimension, attack=0, sampling=self.sampling_time)
         elif self.estimator_name == "ekf":
             Q = np.eye(self.state_dimension[0])
-            R = np.eye(self.state_dimension[0])
+            R = np.eye(self.state_dimension[0])*10
             P = np.eye(self.state_dimension[0])
             self.estimator = EKF(self.a, self.b, self.xp, self.state_dimension, self.input_dimension, Q, R, P, self.sampling_time)
 

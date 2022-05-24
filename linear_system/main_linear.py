@@ -14,8 +14,8 @@ plt.rcParams.update({'font.size': 15})
         
 def main():
     # Initial state
-    initial_state = np.array([0])
-    threshold     = np.array([0.1])
+    initial_state = np.array([5])
+    threshold     = np.array([0.05])
 
 
     # state and input dimension
@@ -53,18 +53,18 @@ def main():
     # Main control loop
     for i in range( int(40/ts) ):
         # Measurement
-        t_control, measurement = robot.observe_with_attack()                # Measure robot states
+        t_control, measurement = robot.observe_with_attack()                            # Measure robot states
         
         if i > 0:
-            x_estimator, x_prediction = detector.estimate( measurement, uc ) # Predict
+            x_estimator, x_prediction = detector.estimate( measurement, uc )            # Predict
         
         
 
         # Anomaly detection
-        detector.update_measurement( measurement )                          # Update detector
-        residues = detector.compute_residues()                              # Compute residues
-        alarm    = detector.verify_alarm()                                  # Trigger alarm
-        control.update_alarm(alarm)                                         # Anomaly detection tells the controller if alarm
+        detector.update_measurement( measurement )                                      # Update detector
+        residues = detector.compute_residues()                                          # Compute residues
+        alarm    = detector.verify_alarm()                                              # Trigger alarm
+        control.update_alarm(alarm)                                                     # Anomaly detection tells the controller if alarm
         detector.estimator.update_alarm(alarm)
         # System
 
@@ -77,8 +77,8 @@ def main():
         uc = control.update_u( measurement, u_reconfigure )                             # compute controller
         ua = uc + 0
         if t_control > 10 and t_control < 20:
-            ua = uc + 0
-        t, x = robot.step( ua )                                              # system step. Store actual system state
+            ua = uc + 1
+        t, x = robot.step( ua )                                                         # system step. Store actual system state
 
         # data store
         t_system_store  = np.hstack( (t_system_store, t) )

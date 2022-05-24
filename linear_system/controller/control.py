@@ -20,5 +20,6 @@ class Controller(object):
 
     def update_u(self, x, ua):
         u = np.zeros(self.input_dimension)
-        u[0] = 1 - ua
+        u[0] = -x
+        u[0] = u[0] - ua
         return u

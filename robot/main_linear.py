@@ -13,8 +13,8 @@ plt.rcParams.update({'font.size': 15})
         
 def main():
     # Initial state
-    initial_state = np.array([0])
-    threshold     = np.array([0.1])
+    initial_state = np.array([0, 0, 0])
+    threshold     = np.array([0.1, 0.1, 0.1])
 
 
     # state and input dimension

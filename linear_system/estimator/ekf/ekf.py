@@ -11,7 +11,6 @@ class EKF():
         self.state_dimension = state_dimension
         self.input_dimension = input_dimension
         self.xp  = np.array(initial_state).reshape(state_dimension)
-        self.xpn = np.array(initial_state).reshape(state_dimension)
         self.xe  = np.array(initial_state).reshape(state_dimension)
         self.F   = np.zeros( (3,3) )
         self.H   = np.zeros( (3,3) )
@@ -24,26 +23,26 @@ class EKF():
     def predict(self, u):
         u = u.flatten()
         xe = self.xp.flatten()
-        xp = xe + system_flow(self.xe, u, self.a, self.b)*self.sampling_time
+        xp = discrete_system(self.xe, u, self.a, self.b)
         xp = xp.reshape(self.state_dimension)
         return xp
     def estimate(self, y, u):
         self.xe = self.xe.flatten()
-        self.xpn = self.xpn.flatten()
+        self.xp = self.xp.flatten()
         u = u.flatten()
         y = y.flatten()
-        self.F   = self.j_f(self.xpn, u)
+        self.F   = self.j_f(self.xp, u)
         self.xp  = self.predict(u)
-        self.H   = self.j_h(self.xpn, u)
+        self.H   = self.j_h(self.xp, u)
         self.P   = np.matmul( self.F, np.matmul(self.P, self.F) ) + self.Q
-        ye       = y - self.xpn
+        ye       = y - self.xp
         S        = np.matmul( self.H, np.matmul(self.P, self.H) ) + self.R
         K        = np.matmul( self.P, np.matmul(self.H.transpose(), inv(S)) )
-        self.xe  = self.xpn + np.matmul(K, ye)
+        self.xe  = self.xp + np.matmul(K, ye)
         self.P   = np.matmul( np.eye(self.state_dimension[0]) - np.matmul(K, self.H), self.P )
         self.xe  = self.xe.reshape(self.state_dimension)
-        self.xpn = self.xpn.reshape(self.state_dimension)
-        return self.xe, self.xpn
+        self.xp  = self.xp.reshape(self.state_dimension)
+        return self.xe, self.xp
 
     def recover(self, y):
         self.xp = y.reshape(self.state_dimension)
