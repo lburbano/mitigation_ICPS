@@ -8,10 +8,9 @@ class Controller(object):
         self.target = target 
         self.Ts = Ts
 
-        self.pos_i = 0
-        self.ang_i = 0
-        self.pos_Kp = 0.5
-        self.ang_kp = 1
+        self.i = 0
+        self.Kp = -1
+        self.Ki = 0.3
         self.turned = 0
         pass
 
@@ -20,6 +19,8 @@ class Controller(object):
 
     def update_u(self, x, ua):
         u = np.zeros(self.input_dimension)
-        u[0] = -x
+        e = (self.target - x)
+        self.i = self.i + self.Ts * e
+        u[0] = self.Kp * x + self.Ki*self.i
         u[0] = u[0] - ua
         return u

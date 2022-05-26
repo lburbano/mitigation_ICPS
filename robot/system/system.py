@@ -17,6 +17,11 @@ def jacobian_f(state, u, dt):
 def jacobian_h(state, u, dt):
     return np.eye(len(state))
 
+def jacobian_B(state, u, dt):
+    return np.array( [ [np.cos(state[2]), 0],\
+        [np.sin(state[2]), 0],\
+        [0, 1] ] )
+
 class System(object):
     def __init__(self,  initial_state, state_dimension, input_dimension, attack=0, noise=0, sampling=0.1, atol=1e-8, rtol=1e-8, max_step=0.001):
         self.x  = np.array( initial_state ).reshape( state_dimension )

@@ -48,31 +48,26 @@ class Estimator():
         if self.estimator_name == "perfect":
             xe, xp = self.perfect_estimator(y, u)
         elif self.estimator_name == "ekf":
-            if sum(self.alarm) == 0:
-                xe, xp = self.estimate_ekf(y, u)
-            else:
-                xp = self.predict_ekf(u)
-                xe = xp
-                # xe, xp = self.estimate_ekf(xp, u) 
+            xe, xp = self.estimate_ekf(y, u)
+            
         self.store_data(xp, u)
         return xe, xp
 
-    def recover_estimator(self):
-        if self.estimator_name == "perfect":
-            pass # do nothing
-        elif self.estimator_name == "ekf":
-            if sum(self.alarm) > 0:
-                if not self.recover_store:
-                    Q = np.eye(3)
-                    R = np.eye(2)
-                    P = np.eye(3)
-                    self.estimator.recover(self.store_y[:, -1])
-                    # self.estimator.reset(self.store_y[:, -1], self.state_dimension, Q, R, P, self.sampling_time)
-                    self.estimator.predict(self.store_u[:, -1])
-                    self.estimator.predict(self.store_u[:, 0])
-                    self.recover_store = 1
+    # def recover_estimator(self):
+    #     if self.estimator_name == "perfect":
+    #         pass # do nothing
+    #     elif self.estimator_name == "ekf":
+    #         if sum(self.alarm) > 0:
+    #             if not self.recover_store:
+    #                 Q = np.eye(3)
+    #                 R = np.eye(2)
+    #                 P = np.eye(3)
+    #                 self.estimator.recover(self.store_y[:, -1])
+    #                 # self.estimator.reset(self.store_y[:, -1], self.state_dimension, Q, R, P, self.sampling_time)
+    #                 self.estimator.predict(self.store_u[:, -1])
+    #                 self.estimator.predict(self.store_u[:, 0])
+    #                 self.recover_store = 1
                     
     
     def update_alarm(self, alarm):
         self.alarm = alarm
-        self.recover_estimator()

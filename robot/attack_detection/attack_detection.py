@@ -26,6 +26,7 @@ class AnomalyDetector():
             self.alarm[i] = 0
             if self.residues[i] > self.threshold[i]:
                 self.alarm[i] = 1
+        self.alarm = self.alarm.reshape(self.state_dimension)
         return self.alarm
     
     def estimate(self, y, u):

@@ -7,6 +7,7 @@ import random
 from system.system import *
 from controller.control import *
 from attack_detection.attack_detection import *
+from reconfiguration.reconfiguration import *
 plt.rcParams.update({'font.size': 15})
 
 
@@ -14,14 +15,14 @@ plt.rcParams.update({'font.size': 15})
 def main():
     # Initial state
     initial_state = np.array([0, 0, 0])
-    threshold     = np.array([0.1, 0.1, 0.1])
+    threshold     = np.array([0.01, 0.01, 0.01])
 
 
     # state and input dimension
     state_dimension = (len(initial_state), 1)
     input_dimension = (2, 1)
     target_dimension = (len(initial_state)-1, 1)
-    ts = 0.1
+    ts = 0.01
     target         = np.array([0.5, 0.1]).reshape(target_dimension)
     
 
@@ -30,7 +31,7 @@ def main():
     robot    = System( initial_state, state_dimension, input_dimension, sampling=ts, attack=0, noise=0)
     control  = Controller(target, state_dimension, input_dimension, ts)
     detector = AnomalyDetector(estimator_name, initial_state, state_dimension, input_dimension, threshold, ts)
-
+    reconf = Reconfiguration(ts, input_dimension)
 
     # Variables to store  state and time of the system
     state_store        = np.array(initial_state).reshape(state_dimension)
@@ -47,18 +48,17 @@ def main():
     # Init useful variables
     alarm = detector.verify_alarm()
     x_prediction = initial_state.reshape(state_dimension)
+    u_reconfigure = np.array( np.zeros( input_dimension ) ).reshape(input_dimension)
+
+    y_previous = initial_state.reshape(state_dimension)
+    y_prediction_previous = initial_state.reshape(state_dimension)
     # Main control loop
     for i in range( int(40/ts) ):
         # Measurement
         t_control, measurement = robot.observe_with_attack()                # Measure robot states
         
         if i > 0:
-            x_estimator, x_prediction = detector.estimate( measurement, u ) # Predict
-        # Control computation
-        if sum(alarm) == 0:
-            u = control.update_u( measurement )                             # compute controller
-        else:
-            u = control.update_u( x_estimator )
+            x_estimator, x_prediction = detector.estimate( measurement, uc ) # Predict
 
         # Anomaly detection
         detector.update_measurement( measurement )                          # Update detector
@@ -66,13 +66,25 @@ def main():
         alarm    = detector.verify_alarm()                                  # Trigger alarm
         control.update_alarm(alarm)                                         # Anomaly detection tells the controller if alarm
         detector.estimator.update_alarm(alarm)
-        # System
-        t, x = robot.step( u )                                              # system step. Store actual system state
+        # Control computation
+        if sum(alarm) == 0:
+            u_reconfigure = np.array( np.zeros( input_dimension ) ).reshape(input_dimension)
+        if sum(alarm) > 0 and not any(np.abs(u_reconfigure) > 0):
+            data = measurement
+            u_reconfigure = reconf.reconfigure(uc, measurement, x_prediction, y_previous, y_prediction_previous, ts)
+        # Control computation
+        uc = control.update_u( measurement, u_reconfigure )                             # compute controller
+        ua = uc + 0
+        if t_control > 10 and t_control < 20:
+            ua = uc + np.array( [1, 1] ).reshape(input_dimension)
+        t, x = robot.step( ua )                                                         # system step. Store actual system state
+        y_previous = measurement + 0
+        y_prediction_previous = x_prediction + 0
 
         # data store
         t_system_store  = np.hstack( (t_system_store, t) )
         state_store     = np.hstack( (state_store, x) )
-        u_store         = np.hstack( (u_store, u) )
+        u_store         = np.hstack( (u_store, uc) )
         t_control_store = np.hstack( (t_control_store, t_control) )
         residues_store  = np.hstack( (residues_store, residues) )
         alarm_store     = np.hstack( (alarm_store, alarm) )

@@ -15,7 +15,7 @@ plt.rcParams.update({'font.size': 15})
 def main():
     # Initial state
     initial_state = np.array([5])
-    threshold     = np.array([0.05])
+    threshold     = np.array([0.02])
 
 
     # state and input dimension
@@ -23,7 +23,7 @@ def main():
     input_dimension = (1, 1)
     target_dimension = (len(initial_state), 1)
     ts = 0.1
-    target         = np.array([0]).reshape(target_dimension)
+    target         = np.array([1]).reshape(target_dimension)
     a = -1; b = 1
 
     # Initialize system 
@@ -50,6 +50,8 @@ def main():
     x_prediction = initial_state.reshape(state_dimension)
 
     u_reconfigure = 0
+    y_previous = initial_state.reshape(state_dimension)
+    y_prediction_previous = initial_state.reshape(state_dimension)
     # Main control loop
     for i in range( int(40/ts) ):
         # Measurement
@@ -57,8 +59,6 @@ def main():
         
         if i > 0:
             x_estimator, x_prediction = detector.estimate( measurement, uc )            # Predict
-        
-        
 
         # Anomaly detection
         detector.update_measurement( measurement )                                      # Update detector
@@ -72,13 +72,15 @@ def main():
         if sum(alarm) == 0:
             u_reconfigure = 0
         if sum(alarm) > 0 and u_reconfigure == 0:
-            u_reconfigure = reconf.reconfigure(measurement, x_prediction, t_control)
+            u_reconfigure = reconf.reconfigure(measurement, x_prediction, y_previous, y_prediction_previous, t_control)
         # Control computation
         uc = control.update_u( measurement, u_reconfigure )                             # compute controller
         ua = uc + 0
         if t_control > 10 and t_control < 20:
             ua = uc + 1
         t, x = robot.step( ua )                                                         # system step. Store actual system state
+        y_previous = measurement + 0
+        y_prediction_previous = x_prediction + 0
 
         # data store
         t_system_store  = np.hstack( (t_system_store, t) )

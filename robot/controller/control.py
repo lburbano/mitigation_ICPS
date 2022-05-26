@@ -18,7 +18,7 @@ class Controller(object):
     def update_alarm(self, alarm):
         self.alarm = alarm
 
-    def update_u(self, x):
+    def update_u(self, x, u_reconfiguration):
         u = np.zeros(self.input_dimension)
         error = np.zeros(self.input_dimension)
         error[0] = self.target[0] - x[0]
@@ -51,10 +51,8 @@ class Controller(object):
         u[1] = u[1]*self.ang_kp
 
 
-        if sum(self.alarm) > 0:
-            u = np.array([0, 0]).reshape( self.input_dimension )
-            pass
         
+        u = u - u_reconfiguration
         u[0] = np.clip(u[0], -1, 1)
         u[1] = np.clip(u[1], -1, 1)
         return u
