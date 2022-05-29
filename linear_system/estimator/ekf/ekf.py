@@ -3,7 +3,7 @@ from system.system import *
 from numpy.linalg import inv
 
 class EKF():
-    def __init__(self, a, b, initial_state, state_dimension, input_dimension, Q, R, P, sampling_time):
+    def __init__(self, j_f, j_h, evolution, initial_state, state_dimension, input_dimension, Q, R, P, sampling_time):
         self.Q = Q
         self.R = R
         self.P = P
@@ -14,16 +14,15 @@ class EKF():
         self.xe  = np.array(initial_state).reshape(state_dimension)
         self.F   = np.zeros( (3,3) )
         self.H   = np.zeros( (3,3) )
-        self.a   = a
-        self.b   = b
-        self.j_f = lambda x, u:jacobian_f(x, u, sampling_time, a, b) 
-        self.j_h = lambda x, u:jacobian_h(x, u, sampling_time, a, b)
+        self.j_f = j_f
+        self.j_h = j_h
+        self.jump = evolution
         pass
 
     def predict(self, u):
         u = u.flatten()
         xe = self.xp.flatten()
-        xp = discrete_system(self.xe, u, self.a, self.b)
+        xp = self.jump(self.xe, u)
         xp = xp.reshape(self.state_dimension)
         return xp
     def estimate(self, y, u):

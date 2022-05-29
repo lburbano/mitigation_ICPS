@@ -3,19 +3,26 @@ from scipy.integrate import solve_ivp
 from functools import partial
 import matplotlib.pyplot as plt 
 from numpy.linalg import inv
-import random
+from scipy.signal import cont2discrete
 from system.system import *
 from controller.control import *
 from attack_detection.attack_detection import *
 from reconfiguration.reconfiguration import *
+from reconfiguration.input_estimator import *
 plt.rcParams.update({'font.size': 15})
 
-
+def compute_KPI(y, yd, Ts, state_dimension):
+    KPI = np.zeros(state_dimension[0],)
+    for i in range( len(y[0]) ):
+        for j in range(state_dimension[0]):
+            KPI[j] = KPI[j] + Ts * np.abs( y[j, i]-yd[j, i] ) 
+    
+    return KPI
         
 def main():
     # Initial state
     initial_state = np.array([5])
-    threshold     = np.array([0.02])
+    threshold     = np.array([0.05])
 
 
     # state and input dimension
@@ -32,6 +39,23 @@ def main():
     control  = Controller(target, state_dimension, input_dimension, ts)
     detector = AnomalyDetector(a, b, estimator_name, initial_state, state_dimension, input_dimension, threshold, ts)
     reconf   = Reconfiguration(a, b, ts, input_dimension)
+    # input_estimator = InputEsitmator()
+
+    # Initialize Detector
+    A_c = np.array( [[a]] )
+    B_c = np.array( [[b]] )
+    C_c = np.array( [[1]] )
+    D_c = np.array( [[0]] )
+    d_system = cont2discrete( (A_c, B_c, C_c, D_c), ts )
+    a_d = d_system[0][0][0]
+    b_d = d_system[1][0][0]
+    Q = np.eye(state_dimension[0])
+    R = np.eye(state_dimension[0])*10
+    P = np.eye(state_dimension[0])
+    j_f  = lambda x,u:discrete_jacobian_f(x, u, ts, a_d, b_d)
+    j_h  = lambda x,u:discrete_jacobian_h(x, u, ts, a_d, b_d)
+    discrete_dynamics = lambda x,u:discrete_system(x, u, a_d, b_d)
+    detector.set_estimator( Q, R, P, j_f, j_h, discrete_dynamics )
 
     # Variables to store  state and time of the system
     state_store        = np.array(initial_state).reshape(state_dimension)
@@ -77,7 +101,7 @@ def main():
         uc = control.update_u( measurement, u_reconfigure )                             # compute controller
         ua = uc + 0
         if t_control > 10 and t_control < 20:
-            ua = uc + 1
+            ua = uc + 2
         t, x = robot.step( ua )                                                         # system step. Store actual system state
         y_previous = measurement + 0
         y_prediction_previous = x_prediction + 0

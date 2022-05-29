@@ -1,35 +1,21 @@
 import numpy as np
 from scipy.integrate import solve_ivp
 from functools import partial
-'''
-def system_flow(state, u):
-    flow = np.zeros( len(state) )
-    flow[0] = u[0] * np.cos(state[2])
-    flow[1] = u[0] * np.sin(state[2])
-    flow[2] = u[1]
-    return flow
+from scipy.signal import cont2discrete
 
-def jacobian_f(state, u, dt):
-    return np.array( [[1, 0, -dt*u[0]*np.sin(state[2])],\
-    [0, 1, dt*u[0]*np.cos(state[2])],\
-    [0, 0, 1]] )
-
-def jacobian_h(state, u, dt):
-    return np.eye(len(state))
-'''
 def system_flow(state, u, a, b):
     flow = np.zeros( len(state) )
     flow[0] = a*state + b*u
     return flow
 # COrrect this. It assumes that Ts = 0.1s. Probably we need c2d in python but...
 def discrete_system(state, u, a, b):
-    jumps = state*0.9048 + 0.09516*u
+    jumps = state*a + b*u
     return jumps
 
-def jacobian_f(state, u, dt, a, b):
-    return np.array( [[0.9048]] )
+def discrete_jacobian_f(state, u, dt, a, b):
+    return np.array( [[a]] )
 
-def jacobian_h(state, u, dt, a, b):
+def discrete_jacobian_h(state, u, dt, a, b):
     return np.eye(len(state))
 
 class System(object):

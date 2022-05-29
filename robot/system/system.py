@@ -22,6 +22,11 @@ def jacobian_B(state, u, dt):
         [np.sin(state[2]), 0],\
         [0, 1] ] )
 
+def jacobian_A(state, u, dt):
+    return np.array( [[0, 0, -u[0]*np.sin(state[2])],\
+    [0, 0, u[0]*np.cos(state[2])],\
+    [0, 0, 0]] )
+
 class System(object):
     def __init__(self,  initial_state, state_dimension, input_dimension, attack=0, noise=0, sampling=0.1, atol=1e-8, rtol=1e-8, max_step=0.001):
         self.x  = np.array( initial_state ).reshape( state_dimension )
