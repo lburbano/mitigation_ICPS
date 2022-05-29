@@ -15,10 +15,11 @@ class AnomalyDetector():
         self.prediction = np.array(initial_state).reshape(state_dimension)
         self.measurement = initial_state
         self.estimator   = Estimator(a, b, estimator_name, initial_state, state_dimension, input_dimension, sampling)
-        self.estimator.set_estimator( )
+        # self.estimator.set_estimator( )
 
-    def set_estimator(self, Q = None, R = None, P = None, j_f = None, j_h = None, discrete_dynamics = None ):
-        self.estimator.set_estimator(Q, R, P, j_f, j_h, discrete_dynamics)
+    def set_estimator(self, Q = None, R = None, P = None, j_f = None, j_h = None, output_function=None, discrete_dynamics = None ):
+        self.estimator.set_estimator(Q, R, P, j_f, j_h, output_function, discrete_dynamics)
+
     def compute_residues(self):
         self.residues = np.abs( self.measurement - self.prediction )
         return self.residues

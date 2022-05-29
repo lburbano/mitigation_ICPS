@@ -7,7 +7,10 @@ def system_flow(state, u, a, b):
     flow = np.zeros( len(state) )
     flow[0] = a*state + b*u
     return flow
-# COrrect this. It assumes that Ts = 0.1s. Probably we need c2d in python but...
+
+def output_function(state):
+    return state
+
 def discrete_system(state, u, a, b):
     jumps = state*a + b*u
     return jumps
@@ -17,6 +20,21 @@ def discrete_jacobian_f(state, u, dt, a, b):
 
 def discrete_jacobian_h(state, u, dt, a, b):
     return np.eye(len(state))
+
+def augmented_discrete_system(state, u, dt, a, b):
+    jumps = np.zeros( len( state ) )
+    jumps[0] = a*state[0] + b*(u + state[1])
+    jumps[1] = state[1]
+    return jumps
+
+def augmented_discrete_jacobian_f(state, u, dt, a, b):
+    return np.array([ [a, b], [0, 0] ])
+
+def augmented_discrete_jacobian_h(state, u, dt, a, b):
+    return np.array([[0, 1]])
+
+def augmented_output_function(state):
+    return state[0]
 
 class System(object):
     def __init__(self, a, b, initial_state, state_dimension, input_dimension, attack=0, noise=0, sampling=0.1, atol=1e-8, rtol=1e-8, max_step=0.001):

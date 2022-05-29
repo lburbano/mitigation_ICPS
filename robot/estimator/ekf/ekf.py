@@ -34,7 +34,7 @@ class EKF():
         self.H   = self.j_h(self.xp, u)
         self.P   = np.matmul( self.F, np.matmul(self.P, self.F) ) + self.Q
         ye       = y - self.xp
-        S        = np.matmul( self.H, np.matmul(self.P, self.H) ) + self.R
+        S        = np.matmul( self.H, np.matmul(self.P, self.H.transpose()) ) + self.R
         K        = np.matmul( self.P, np.matmul(self.H.transpose(), inv(S)) )
         self.xe  = self.xp + np.matmul(K, ye)
         self.P   = np.matmul( np.eye(self.state_dimension[0]) - np.matmul(K, self.H), self.P )

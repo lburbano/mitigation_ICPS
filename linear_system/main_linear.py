@@ -39,7 +39,7 @@ def main():
     control  = Controller(target, state_dimension, input_dimension, ts)
     detector = AnomalyDetector(a, b, estimator_name, initial_state, state_dimension, input_dimension, threshold, ts)
     reconf   = Reconfiguration(a, b, ts, input_dimension)
-    # input_estimator = InputEsitmator()
+    
 
     # Initialize Detector
     A_c = np.array( [[a]] )
@@ -54,8 +54,13 @@ def main():
     P = np.eye(state_dimension[0])
     j_f  = lambda x,u:discrete_jacobian_f(x, u, ts, a_d, b_d)
     j_h  = lambda x,u:discrete_jacobian_h(x, u, ts, a_d, b_d)
+    h    = lambda x:output_function(x)
     discrete_dynamics = lambda x,u:discrete_system(x, u, a_d, b_d)
-    detector.set_estimator( Q, R, P, j_f, j_h, discrete_dynamics )
+    detector.set_estimator( Q, R, P, j_f, j_h, h, discrete_dynamics )
+
+    # Initialize input estimator
+    estimator_initial_state = np.array( [initial_state[0], 0] )
+    input_estimator = InputEsitmator(a_d, b_d, estimator_initial_state, ts, state_dimension, input_dimension)
 
     # Variables to store  state and time of the system
     state_store        = np.array(initial_state).reshape(state_dimension)
@@ -83,6 +88,7 @@ def main():
         
         if i > 0:
             x_estimator, x_prediction = detector.estimate( measurement, uc )            # Predict
+            u_estimation = input_estimator.estimate_u(measurement, uc)
 
         # Anomaly detection
         detector.update_measurement( measurement )                                      # Update detector
@@ -95,8 +101,9 @@ def main():
         # Estimate attack
         if sum(alarm) == 0:
             u_reconfigure = 0
-        if sum(alarm) > 0 and u_reconfigure == 0:
-            u_reconfigure = reconf.reconfigure(measurement, x_prediction, y_previous, y_prediction_previous, t_control)
+        if sum(alarm) > 0 :
+            # u_reconfigure = reconf.reconfigure(measurement, x_prediction, y_previous, y_prediction_previous, t_control)
+            u_reconfigure = u_estimation
         # Control computation
         uc = control.update_u( measurement, u_reconfigure )                             # compute controller
         ua = uc + 0
