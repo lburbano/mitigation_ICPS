@@ -9,12 +9,22 @@ def system_flow(state, u):
     flow[2] = u[1]
     return flow
 
-def jacobian_f(state, u, dt):
+def output_function(state):
+    return state
+
+def discrete_system(state, u, dt):
+    x = np.zeros( len(state) )
+    x[0] = state[0] + u[0] * np.sin(x[2]) * dt
+    x[1] = state[1] + u[0] * np.cos(x[2]) * dt
+    x[2] = state[2] + u[1] * dt
+    return x
+
+def discrete_jacobian_f(state, u, dt):
     return np.array( [[1, 0, -dt*u[0]*np.sin(state[2])],\
     [0, 1, dt*u[0]*np.cos(state[2])],\
     [0, 0, 1]] )
 
-def jacobian_h(state, u, dt):
+def discrete_jacobian_h(state, u, dt):
     return np.eye(len(state))
 
 def jacobian_B(state, u, dt):
@@ -26,6 +36,40 @@ def jacobian_A(state, u, dt):
     return np.array( [[0, 0, -u[0]*np.sin(state[2])],\
     [0, 0, u[0]*np.cos(state[2])],\
     [0, 0, 0]] )
+
+def augmented_discrete_system(state, u, dt):
+    jumps = np.zeros( len( state ) )
+    z1 = state[0]
+    z2 = state[1]
+    z3 = state[2]
+    t1 = state[3]
+    t2 = state[4]
+    jumps[0] = z1 + dt*(u[0] + t1)*np.cos(z3)
+    jumps[1] = z2 + dt*(u[0] + t1)*np.cos(z3)
+    jumps[2] = z3 + dt*(u[1] + t2)
+    jumps[3] = t1
+    jumps[4] = t2
+    return jumps
+
+def augmented_discrete_jacobian_f(state, u, dt):
+    n = len(state)
+    z1 = state[0]
+    z2 = state[1]
+    z3 = state[2]
+    t1 = state[3]
+    t2 = state[4]
+
+    jacobian = np.eye( n )
+    jacobian[0, 2] = -dt * np.cos(z3) * (t1 + u[0]); jacobian[0, 3] = -dt * np.cos(z3)
+    jacobian[1, 2] = -dt * np.sin(z3) * (t1 + u[0]); jacobian[1, 3] = -dt * np.cos(z3)
+    jacobian[2, 4] = dt
+    return jacobian
+
+def augmented_discrete_jacobian_h(state, u, dt):
+    return np.array([[1, 0, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 1, 0, 0]])
+
+def augmented_output_function(state):
+    return state[0:3]
 
 class System(object):
     def __init__(self,  initial_state, state_dimension, input_dimension, attack=0, noise=0, sampling=0.1, atol=1e-8, rtol=1e-8, max_step=0.001):

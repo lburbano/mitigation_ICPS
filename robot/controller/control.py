@@ -20,39 +20,17 @@ class Controller(object):
 
     def update_u(self, x, u_reconfiguration):
         u = np.zeros(self.input_dimension)
-        error = np.zeros(self.input_dimension)
-        error[0] = self.target[0] - x[0]
-        error[1] = self.target[1] - x[1]
+        x = x.flatten()
 
-        u[0] = ( (error[0])**2 + (error[1])**2 )**(1/2) 
-        u[1] = np.arctan2( error[1], error[0] )
-        # if u[0] < 0.05:
-        #     u[0] = 0
-        #     u[1] = 0
+        d = 0.035
+        z1 = x[0] + d*np.cos( x[2] )
+        z2 = x[1] + d*np.sin( x[2] )
 
-        # self.pos_i = self.pos_i + u[0] * self.Ts
-        # self.ang_i = self.ang_i + u[1] * self.Ts
-
-        
-        # x[2] = np.mod( x[2], np.pi) + 0.0
-        if np.abs( u[1] - np.mod(x[2], np.pi) ) > 0.0001 and self.turned == 0:
-            u[0] = 0
-            u[1] = u[1] - np.mod(x[2], np.pi)
-        elif np.abs( u[0] ) > 0.01:
-            self.turned = 1
-            # u[0] = 1
-            u[1] = 0
-            # self.turned = 1
-        else:
-            u[0] = 0
-            u[1] = 0
-        
-        u[0] = u[0]*self.pos_Kp
-        u[1] = u[1]*self.ang_kp
+        error = self.target.flatten()*self.pos_Kp - np.array([z1, z2]).flatten()*self.pos_Kp
 
 
-        
-        u = u - u_reconfiguration
-        u[0] = np.clip(u[0], -1, 1)
-        u[1] = np.clip(u[1], -1, 1)
-        return u
+        v = 1/d * (d*np.cos(x[2]) * error[0] + d*np.sin(x[2]) * error[1] )
+        w = 1/d * (-np.sin(x[2]) * error[0] + np.cos(x[2]) * error[1] )
+
+
+        return np.array([v, w]).reshape(self.input_dimension)

@@ -51,15 +51,15 @@ class EKF():
     def reset_prediction(self):
         self.xpn = self.xp
     
-    def reset(self, initial_state, state_dimension, Q, R, P, sampling_time):
-        self.Q = Q
-        self.R = R
-        self.P = P
-        self.sampling_time = sampling_time
-        self.state_dimension = state_dimension
-        self.xp  = initial_state
-        self.xe  = initial_state
-        self.j_f = lambda x, u:discrete_jacobian_f(x, u, sampling_time) 
-        self.j_h = lambda x, u:np.eye(2)
-        self.F  = np.zeros( (3,3) )
-        self.H  = np.zeros( (3,3) )
+    # def reset(self, initial_state, state_dimension, Q, R, P, sampling_time):
+    #     self.Q = Q
+    #     self.R = R
+    #     self.P = P
+    #     self.sampling_time = sampling_time
+    #     self.state_dimension = state_dimension
+    #     self.xp  = initial_state
+    #     self.xe  = initial_state
+    #     self.j_f = lambda x, u:discrete_jacobian_f(x, u, sampling_time) 
+    #     self.j_h = lambda x, u:np.eye(2)
+    #     self.F  = np.zeros( (3,3) )
+    #     self.H  = np.zeros( (3,3) )

@@ -35,14 +35,11 @@ class Estimator():
         self.xe = self.xp
         return self.xe, self.xp
 
-    def set_estimator(self):
+    def set_estimator(self, Q = None, R = None, P = None, j_f = None, j_h = None, output_function=None, discrete_dynamics = None ):
         if self.estimator_name == "perfect":
             self.estimator = System(self.xp, self.state_dimension, self.input_dimension, attack=0, sampling=self.sampling_time)
         elif self.estimator_name == "ekf":
-            Q = np.eye(self.state_dimension[0])
-            R = np.eye(self.state_dimension[0])
-            P = np.eye(self.state_dimension[0])
-            self.estimator = EKF(self.xp, self.state_dimension, self.input_dimension, Q, R, P, self.sampling_time)
+            self.estimator = EKF(j_f, j_h, output_function, discrete_dynamics, self.xp, self.state_dimension, self.input_dimension, Q, R, P, self.sampling_time)
 
     def estimate(self, y, u):
         if self.estimator_name == "perfect":

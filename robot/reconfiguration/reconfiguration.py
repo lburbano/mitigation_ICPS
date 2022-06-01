@@ -1,21 +1,22 @@
 import numpy as np
-from system.system import *
 from numpy.linalg import pinv, inv
 from scipy.linalg import expm
 
 class Reconfiguration():
-    def __init__(self, Ts, input_dimension):
+    def __init__(self, jacobian_A, jacobian_B, Ts, input_dimension):
         self.Ts = Ts
         self.input_dimension = input_dimension
+        self.A = jacobian_A
+        self.B = jacobian_B
     
-    def reconfigure(self, u, y, y_estimation, y_previous, y_estimation_previous, t):
+    def reconfigure(self, A, B, u, y, y_estimation, y_previous, y_estimation_previous, t):
         y_estimation = y_estimation.flatten()
         u = u.flatten()
         y = y.flatten()
         y_previous = y_previous.flatten()
         y_estimation_previous = y_estimation_previous.flatten()
-        A = jacobian_A(y_estimation, u, self.Ts)
-        B = jacobian_B(y_estimation, u, self.Ts)
+        A = self.A(y_estimation, u, self.Ts)
+        B = self.B(y_estimation, u, self.Ts)
 
         difference = y_estimation - y - np.matmul(expm(A*self.Ts), y_estimation_previous - y_previous)
 

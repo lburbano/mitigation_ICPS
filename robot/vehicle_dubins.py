@@ -1,13 +1,15 @@
+from charset_normalizer import detect
 import numpy as np
 from scipy.integrate import solve_ivp
 from functools import partial
 import matplotlib.pyplot as plt 
 from numpy.linalg import inv
 import random
-from system.system import *
+from system_robot.system import *
 from controller.control import *
 from attack_detection.attack_detection import *
 from reconfiguration.reconfiguration import *
+from reconfiguration.input_estimator import *
 plt.rcParams.update({'font.size': 15})
 
 
@@ -31,7 +33,28 @@ def main():
     robot    = System( initial_state, state_dimension, input_dimension, sampling=ts, attack=0, noise=0)
     control  = Controller(target, state_dimension, input_dimension, ts)
     detector = AnomalyDetector(estimator_name, initial_state, state_dimension, input_dimension, threshold, ts)
-    reconf = Reconfiguration(ts, input_dimension)
+
+    jac_A = lambda x, u:jacobian_A(x, u, ts)
+    jac_B = lambda x, u:jacobian_B(x, u, ts)
+    reconf = Reconfiguration(jac_A, jac_B, ts, input_dimension)
+    
+    # Initialize Detector
+    Q = np.eye(state_dimension[0])
+    R = np.eye(state_dimension[0])*10
+    P = np.eye(state_dimension[0])
+    j_f  = lambda x,u:discrete_jacobian_f(x, u, ts)
+    j_h  = lambda x,u:discrete_jacobian_h(x, u, ts)
+    h    = lambda x:output_function(x)
+    discrete_dynamics = lambda x,u:discrete_system(x, u, ts)
+    detector.set_estimator( Q, R, P, j_f, j_h, h, discrete_dynamics )
+
+    # Initialize input estimator
+    initial_state_augmented = estimator_initial_state = np.array( [initial_state[0], initial_state[1], initial_state[2], 0, 0] )
+    j_f_augmented = lambda x, u:augmented_discrete_jacobian_f(x, u, ts)
+    j_h_augmented = lambda x, u:augmented_discrete_jacobian_h(x, u, ts)
+    dynamics_augmented = lambda x, u:augmented_discrete_system(x, u, ts)
+    output_augmented = lambda x:augmented_output_function(x)
+    input_estimator = InputEsitmator(j_f_augmented, j_h_augmented, output_augmented, dynamics_augmented, initial_state_augmented, ts, state_dimension, input_dimension)
 
     # Variables to store  state and time of the system
     state_store        = np.array(initial_state).reshape(state_dimension)
@@ -59,6 +82,8 @@ def main():
         
         if i > 0:
             x_estimator, x_prediction = detector.estimate( measurement, uc ) # Predict
+            x_estimator_augmented = input_estimator.estimate_u(measurement, uc)
+            u_estimated = x_estimator_augmented[3:]
 
         # Anomaly detection
         detector.update_measurement( measurement )                          # Update detector
@@ -71,12 +96,12 @@ def main():
             u_reconfigure = np.array( np.zeros( input_dimension ) ).reshape(input_dimension)
         if sum(alarm) > 0 and not any(np.abs(u_reconfigure) > 0):
             data = measurement
-            u_reconfigure = reconf.reconfigure(uc, measurement, x_prediction, y_previous, y_prediction_previous, ts)
+            # u_reconfigure = reconf.reconfigure(uc, measurement, x_prediction, y_previous, y_prediction_previous, ts)
         # Control computation
         uc = control.update_u( measurement, u_reconfigure )                             # compute controller
         ua = uc + 0
         if t_control > 10 and t_control < 20:
-            ua = uc + np.array( [1, 1] ).reshape(input_dimension)
+            ua = uc + np.array( [1, 0] ).reshape(input_dimension)
         t, x = robot.step( ua )                                                         # system step. Store actual system state
         y_previous = measurement + 0
         y_prediction_previous = x_prediction + 0

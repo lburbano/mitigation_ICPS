@@ -5,7 +5,7 @@ from functools import partial
 import matplotlib.pyplot as plt 
 from numpy.linalg import inv
 from scipy.signal import cont2discrete
-from system.system import *
+from system_linear.system import *
 from controller.control import *
 from attack_detection.attack_detection import *
 from reconfiguration.reconfiguration import *

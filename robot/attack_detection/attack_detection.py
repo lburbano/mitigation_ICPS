@@ -1,5 +1,4 @@
 import numpy as np
-from system.system import *
 from estimator.estimator import *
 
 class AnomalyDetector():
@@ -8,7 +7,6 @@ class AnomalyDetector():
         self.state_dimension = state_dimension
         self.alarm = np.zeros(state_dimension)
         self.threshold = threshold
-        self.system = System(initial_state, state_dimension, input_dimension, attack=0, sampling=sampling, noise=0)
 
         self.estimation = np.array(initial_state).reshape(state_dimension)
         self.prediction = np.array(initial_state).reshape(state_dimension)
@@ -16,7 +14,9 @@ class AnomalyDetector():
         self.estimator   = Estimator(estimator_name, initial_state, state_dimension, input_dimension, sampling)
         self.estimator.set_estimator( )
 
-    
+    def set_estimator(self, Q = None, R = None, P = None, j_f = None, j_h = None, output_function=None, discrete_dynamics = None ):
+        self.estimator.set_estimator(Q, R, P, j_f, j_h, output_function, discrete_dynamics)
+
     def compute_residues(self):
         self.residues = np.abs( self.measurement - self.prediction )
         return self.residues
@@ -36,8 +36,3 @@ class AnomalyDetector():
     def update_measurement(self, measurements):
         self.measurement = measurements
     
-    def reset(self, initial_state):
-        self.system.reset(initial_state)
-        self.alarm = np.zeros(self.state_dimension)
-        self.residues = np.zeros(self.state_dimension)
-        self.estimation = initial_state
