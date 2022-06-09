@@ -6,7 +6,7 @@ This repo contains the project for the Introduction to cyber-physical systems cl
 
 ### Linear system
 
-Go to the ``linear_system` folder and run 
+Go to the `linear_system` folder and run 
 ```
 python3 main_linear.py
 ```
