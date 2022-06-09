@@ -7,8 +7,12 @@ This repo contains the project for the Introduction to cyber-physical systems cl
 ### Linear system
 
 Go to the linear system folder and run 
-`python3 main_linear.py`
+```
+python3 main_linear.py
+```
 
 ### Robot vehicle
 Go to the linear system folder and run 
-`python3 main_vehicle_dubins.py`
+```
+python3 main_vehicle_dubins.py
+```
