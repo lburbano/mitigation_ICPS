@@ -6,13 +6,13 @@ This repo contains the project for the Introduction to cyber-physical systems cl
 
 ### Linear system
 
-Go to the `linear_system` folder and run 
+Go to the `linear_system` folder, which will be used as working directory for the linear system and run 
 ```
 python3 main_linear.py
 ```
 
 ### Robot vehicle
-Go to the `robot` folder and run 
+Go to the `robot` folder, which will be used as working directory for the robotic vehicle and run 
 ```
 python3 main_vehicle_dubins.py
 ```
