@@ -14,7 +14,7 @@ plt.rcParams.update({'font.size': 15})
 
 
         
-def main():
+def main(attack, reconfiguration):
     # Initial state
     initial_state = np.array([0, 0, 0])
     threshold     = np.array([0.01, 0.01, 0.01])
@@ -76,7 +76,7 @@ def main():
     y_previous = initial_state.reshape(state_dimension)
     y_prediction_previous = initial_state.reshape(state_dimension)
     # Main control loop
-    for i in range( int(40/ts) ):
+    for i in range( int(100/ts) ):
         # Measurement
         t_control, measurement = robot.observe_with_attack()                # Measure robot states
         
@@ -84,6 +84,7 @@ def main():
             x_estimator, x_prediction = detector.estimate( measurement, uc ) # Predict
             x_estimator_augmented = input_estimator.estimate_u(measurement, uc)
             u_estimated = x_estimator_augmented[3:]
+            u_estimated = u_estimated.reshape(input_dimension)
 
         # Anomaly detection
         detector.update_measurement( measurement )                          # Update detector
@@ -94,14 +95,17 @@ def main():
         # Control computation
         if sum(alarm) == 0:
             u_reconfigure = np.array( np.zeros( input_dimension ) ).reshape(input_dimension)
-        if sum(alarm) > 0 and not any(np.abs(u_reconfigure) > 0):
-            data = measurement
-            # u_reconfigure = reconf.reconfigure(uc, measurement, x_prediction, y_previous, y_prediction_previous, ts)
+        if sum(alarm) > 0:
+            # data = measurement
+            if reconfiguration == 1 and sum( np.abs(u_reconfigure) ) == 0:
+                u_reconfigure = reconf.reconfigure( uc, measurement, x_prediction, y_previous, y_prediction_previous, t_control )
+            elif reconfiguration == 2:
+                u_reconfigure = u_estimated
         # Control computation
         uc = control.update_u( measurement, u_reconfigure )                             # compute controller
         ua = uc + 0
-        if t_control > 10 and t_control < 20:
-            ua = uc + np.array( [1, 0] ).reshape(input_dimension)
+        if t_control > 10 and t_control < 60 and attack:
+            ua = uc + np.array( [2, 0] ).reshape(input_dimension)
         t, x = robot.step( ua )                                                         # system step. Store actual system state
         y_previous = measurement + 0
         y_prediction_previous = x_prediction + 0
@@ -113,7 +117,7 @@ def main():
         t_control_store = np.hstack( (t_control_store, t_control) )
         residues_store  = np.hstack( (residues_store, residues) )
         alarm_store     = np.hstack( (alarm_store, alarm) )
-
+    '''
     # Plotting
     fig, ax = plt.subplots( figsize=(8, 3) )
     ax.plot( t_system_store, state_store[0:3, :].transpose(), label=["$z_1$", "$z_2$", "$z_3$"] )
@@ -121,14 +125,15 @@ def main():
     ax.set_ylabel( "Position [m]" )
     plt.legend()
     # plt.savefig(f'{estimator_name}_attack_detection_state_x_{initial_state[0]}_y_{initial_state[1]}.pdf', bbox_inches='tight')
-
+    
     fig, ax = plt.subplots( figsize=(8, 3) )
-    ax.plot( t_control_store, alarm_store.transpose(), drawstyle="steps", label=["$z_1$", "$z_2$", "$z_3$"] )
+    ax.plot( t_control_store, sum(alarm_store).transpose()/(0.0001+sum(alarm_store).transpose()), drawstyle="steps")
     ax.set_xlabel( "Time [s]" )
     ax.set_ylabel( "Alarm" )
-    plt.legend()
-    # plt.savefig(f'{estimator_name}_attack_detection_alarm_x_{initial_state[0]}_y_{initial_state[1]}.pdf', bbox_inches='tight')
-
+    plt.grid()
+    # plt.legend()
+    plt.savefig(f'{estimator_name}_attack_detection_alarm_x_{initial_state[0]}_y_{initial_state[1]}.pdf', bbox_inches='tight')
+    
     fig, ax = plt.subplots( figsize=(8, 3) )
     ax.plot( t_control_store, residues_store.transpose(), drawstyle="steps" )
     ax.set_xlabel( "Time [s]" )
@@ -143,6 +148,49 @@ def main():
     # plt.savefig(f'{estimator_name}_attack_detection_residues_x_{initial_state[0]}_y_{initial_state[1]}.pdf', bbox_inches='tight')
 
     plt.show()
+    '''
+    return t_system_store, state_store.transpose()
+
+def main_multiple_sim():
+    attack = 0
+    reconfiguration = 0
+    time_no_attack, state_no_attack = main(attack, reconfiguration)
+
+    attack = 1
+    reconfiguration = 0
+    time_attack_no_reconfiguration, state_attack_no_reconfiguration = main(attack, reconfiguration)
+
+    attack = 1
+    reconfiguration = 1
+    time_attack_reconfiguration_1, state_attack_reconfiguration_1 = main(attack, reconfiguration)
+
+    attack = 1
+    reconfiguration = 2
+    time_attack_reconfiguration_2, state_attack_reconfiguration_2 = main(attack, reconfiguration)
+
+    fig, ax = plt.subplots( figsize=(8, 3) )
+    ax.plot( time_no_attack, state_no_attack[:, 0], label="NA" )
+    ax.plot( time_attack_no_reconfiguration, state_attack_no_reconfiguration[:, 0], label="A - NR" )
+    ax.plot( time_attack_reconfiguration_1, state_attack_reconfiguration_1[:, 0], label="A - R1" )
+    ax.plot( time_attack_reconfiguration_2, state_attack_reconfiguration_2[:, 0], label="A - R2" )
+    plt.legend(ncol=2)
+    ax.set_xlabel( "Time [s]" )
+    ax.set_ylabel( "Position $z_1$" )
+    plt.grid()
+    # plt.savefig(f'attack_mitigation_w_robot_z1_both.pdf', bbox_inches='tight')
+
+    fig, ax = plt.subplots( figsize=(8, 3) )
+    ax.plot( time_no_attack, state_no_attack[:, 1], label="NA" )
+    ax.plot( time_attack_no_reconfiguration, state_attack_no_reconfiguration[:, 1], label="A - NR" )
+    ax.plot( time_attack_reconfiguration_1, state_attack_reconfiguration_1[:, 1], label="A - R" )
+    ax.plot( time_attack_reconfiguration_2, state_attack_reconfiguration_2[:, 1], label="A - R2" )
+    plt.legend(ncol=2)
+    ax.set_xlabel( "Time [s]" )
+    ax.set_ylabel( "Position $z_2$" )
+    # ax.set_ylim([-2, 4])
+    plt.grid()
+    # plt.savefig(f'attack_mitigation_w_robot_z2_both.pdf', bbox_inches='tight')
+    plt.show()
 
 if __name__ == "__main__":
-    main()
+    main_multiple_sim()

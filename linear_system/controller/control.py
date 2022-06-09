@@ -9,7 +9,7 @@ class Controller(object):
         self.Ts = Ts
 
         self.i = 0
-        self.Kp = -1
+        self.Kp =  1#-1
         self.Ki = 0.3
         self.turned = 0
         pass
@@ -21,6 +21,6 @@ class Controller(object):
         u = np.zeros(self.input_dimension)
         e = (self.target - x)
         self.i = self.i + self.Ts * e
-        u[0] = self.Kp * x + self.Ki*self.i
+        u[0] = self.Kp * e #+ self.Ki*self.i
         u[0] = u[0] - ua
         return u

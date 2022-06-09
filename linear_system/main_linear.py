@@ -30,7 +30,7 @@ def main(attack, reconfiguration):
     state_dimension = (len(initial_state), 1)
     input_dimension = (1, 1)
     target_dimension = (len(initial_state), 1)
-    ts = 0.1
+    ts = 0.01
     target         = np.array([1]).reshape(target_dimension)
     a = -1; b = 1
 
@@ -104,9 +104,12 @@ def main(attack, reconfiguration):
         # Estimate attack
         if sum(alarm) == 0:
             u_reconfigure = 0
-        if sum(alarm) > 0 and u_reconfigure == 0 and reconfiguration:
-            u_reconfigure = reconf.reconfigure(measurement, x_prediction, y_previous, y_prediction_previous, t_control)
-            # u_reconfigure = u_estimation
+        if sum(alarm) > 0:
+            if reconfiguration == 2:
+                u_reconfigure = u_estimation
+            elif reconfiguration == 1 and u_reconfigure == 0:
+                u_reconfigure = reconf.reconfigure(measurement, x_prediction, y_previous, y_prediction_previous, t_control)
+            
         # Control computation
         uc = control.update_u( measurement, u_reconfigure )                             # compute controller
         ua = uc + 0
@@ -162,7 +165,7 @@ def main(attack, reconfiguration):
     return t_system_store, state_store.transpose()
     # plt.show()
 
-def main_plot():
+def main_multiple_sim():
     attack = 1
     reconfiguration = 0
     t_attack, states_attack = main(attack, reconfiguration)
@@ -171,20 +174,26 @@ def main_plot():
     reconfiguration = 1
     t_reconfiguration, states_reconfiguration = main(attack, reconfiguration)
 
+    attack = 1
+    reconfiguration = 2
+    t_reconfiguration_2, states_reconfiguration_2 = main(attack, reconfiguration)
+
     attack = 0
     reconfiguration = 0
     t_no_attack, states_no_attack = main(attack, reconfiguration)
 
     fig, ax = plt.subplots( figsize=(8, 3) )
-    ax.plot( t_attack, states_attack, label="Attack no reconfiguration" )
-    ax.plot( t_reconfiguration, states_reconfiguration, label="Attack and reconfiguration" )
-    ax.plot( t_no_attack, states_no_attack, label="No attack" )
+    ax.plot( t_no_attack, states_no_attack, label="NA" )
+    ax.plot( t_attack, states_attack, label="A - NR" )
+    ax.plot( t_reconfiguration, states_reconfiguration, label="A - R1" )
+    ax.plot( t_reconfiguration_2, states_reconfiguration_2, label="A - R2" )
+    
     plt.legend()
     ax.set_xlabel( "Time [s]" )
     ax.set_ylabel( "State" )
     plt.grid()
-    # plt.savefig(f'linear_system_states.pdf', bbox_inches='tight')
+    plt.savefig(f'linear_system_reconfiguration.pdf', bbox_inches='tight')
     plt.show()
 
 if __name__ == "__main__":
-    main_plot()
+    main_multiple_sim()

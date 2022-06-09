@@ -10,7 +10,7 @@ class Controller(object):
 
         self.pos_i = 0
         self.ang_i = 0
-        self.pos_Kp = 0.5
+        self.pos_Kp = 0.1
         self.ang_kp = 1
         self.turned = 0
         pass
@@ -32,5 +32,5 @@ class Controller(object):
         v = 1/d * (d*np.cos(x[2]) * error[0] + d*np.sin(x[2]) * error[1] )
         w = 1/d * (-np.sin(x[2]) * error[0] + np.cos(x[2]) * error[1] )
 
-
-        return np.array([v, w]).reshape(self.input_dimension)
+        u = np.array([v, w]).reshape(self.input_dimension) - u_reconfiguration
+        return u.reshape(self.input_dimension)

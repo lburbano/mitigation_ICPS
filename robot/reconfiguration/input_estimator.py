@@ -14,8 +14,9 @@ class InputEsitmator():
         dynamics = dynamics
         h = h
 
+        # move this matrices to the main. This should be a parameter
         Q = np.eye(self.state_dimension_augmented[0])
-        R = np.eye(self.state_dimension[0])*10
+        R = np.eye(self.state_dimension[0])*100
         P = np.eye(self.state_dimension_augmented[0])
         self.estiamor = EKF(j_f, j_h, h, dynamics, initial_state, self.state_dimension_augmented, input_dimension, Q, R, P, sampling_time)
 

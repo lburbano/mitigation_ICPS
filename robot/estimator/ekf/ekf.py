@@ -33,7 +33,7 @@ class EKF():
         self.F   = self.j_f(self.xp, u)
         self.xp  = self.predict(u)
         self.H   = self.j_h(self.xp, u)
-        self.P   = np.matmul( self.F, np.matmul(self.P, self.F) ) + self.Q
+        self.P   = np.matmul( self.F, np.matmul(self.P, self.F.transpose()) ) + self.Q
         ye       = y - self.h(self.xp).flatten()
         S        = np.matmul( self.H, np.matmul(self.P, self.H.transpose()) ) + self.R
         K        = np.matmul( self.P, np.matmul(self.H.transpose(), inv(S)) )

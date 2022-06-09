@@ -2,3 +2,5 @@
 /.vscode
 /.vs
 *.pyc
+*.pdf
+*.m

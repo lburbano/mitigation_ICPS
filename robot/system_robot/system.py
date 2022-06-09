@@ -44,7 +44,7 @@ def augmented_discrete_system(state, u, dt):
     z3 = state[2]
     t1 = state[3]
     t2 = state[4]
-    jumps[0] = z1 + dt*(u[0] + t1)*np.cos(z3)
+    jumps[0] = z1 + dt*(u[0] + t1)*np.sin(z3)
     jumps[1] = z2 + dt*(u[0] + t1)*np.cos(z3)
     jumps[2] = z3 + dt*(u[1] + t2)
     jumps[3] = t1
@@ -60,9 +60,9 @@ def augmented_discrete_jacobian_f(state, u, dt):
     t2 = state[4]
 
     jacobian = np.eye( n )
-    jacobian[0, 2] = -dt * np.cos(z3) * (t1 + u[0]); jacobian[0, 3] = -dt * np.cos(z3)
-    jacobian[1, 2] = -dt * np.sin(z3) * (t1 + u[0]); jacobian[1, 3] = -dt * np.cos(z3)
-    jacobian[2, 4] = dt
+    jacobian[0, 2] =  dt * np.cos(z3) * (t1 + u[0]); jacobian[0, 3] = dt * np.sin(z3)
+    jacobian[1, 2] = -dt * np.sin(z3) * (t1 + u[0]); jacobian[1, 3] = dt * np.cos(z3)
+    jacobian[2, 4] =  dt
     return jacobian
 
 def augmented_discrete_jacobian_h(state, u, dt):
