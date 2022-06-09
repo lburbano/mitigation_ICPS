@@ -34,10 +34,12 @@ def main(attack, reconfiguration):
     control  = Controller(target, state_dimension, input_dimension, ts)
     detector = AnomalyDetector(estimator_name, initial_state, state_dimension, input_dimension, threshold, ts)
 
+    # Initialize Reconfigurator 1
     jac_A = lambda x, u:jacobian_A(x, u, ts)
     jac_B = lambda x, u:jacobian_B(x, u, ts)
     reconf = Reconfiguration(jac_A, jac_B, ts, input_dimension)
     
+
     # Initialize Detector
     Q = np.eye(state_dimension[0])
     R = np.eye(state_dimension[0])*10
@@ -48,7 +50,8 @@ def main(attack, reconfiguration):
     discrete_dynamics = lambda x,u:discrete_system(x, u, ts)
     detector.set_estimator( Q, R, P, j_f, j_h, h, discrete_dynamics )
 
-    # Initialize input estimator
+
+    # Initialize reconfigurator 2
     initial_state_augmented = estimator_initial_state = np.array( [initial_state[0], initial_state[1], initial_state[2], 0, 0] )
     j_f_augmented = lambda x, u:augmented_discrete_jacobian_f(x, u, ts)
     j_h_augmented = lambda x, u:augmented_discrete_jacobian_h(x, u, ts)
@@ -56,57 +59,61 @@ def main(attack, reconfiguration):
     output_augmented = lambda x:augmented_output_function(x)
     input_estimator = InputEsitmator(j_f_augmented, j_h_augmented, output_augmented, dynamics_augmented, initial_state_augmented, ts, state_dimension, input_dimension)
 
+
     # Variables to store  state and time of the system
     state_store        = np.array(initial_state).reshape(state_dimension)
     t_system_store     = np.array([0])
+
 
     # Variables to store the residues
     residues_store  = np.array([0, 0, 0]).reshape(state_dimension)
     alarm_store     = np.array([0, 0, 0]).reshape(state_dimension)
 
+
     # Variables to store control action and time of cyber world
     u_store     = np.zeros(input_dimension)
     t_control_store = np.array([0])
     
+
     # Init useful variables
     alarm = detector.verify_alarm()
     x_prediction = initial_state.reshape(state_dimension)
     u_reconfigure = np.array( np.zeros( input_dimension ) ).reshape(input_dimension)
-
     y_previous = initial_state.reshape(state_dimension)
     y_prediction_previous = initial_state.reshape(state_dimension)
+
+
     # Main control loop
     for i in range( int(100/ts) ):
         # Measurement
-        t_control, measurement = robot.observe_with_attack()                # Measure robot states
+        t_control, measurement = robot.observe_with_attack()                    # Measure robot states
         
         if i > 0:
-            x_estimator, x_prediction = detector.estimate( measurement, uc ) # Predict
+            x_estimator, x_prediction = detector.estimate( measurement, uc )    # Predict
             x_estimator_augmented = input_estimator.estimate_u(measurement, uc)
             u_estimated = x_estimator_augmented[3:]
             u_estimated = u_estimated.reshape(input_dimension)
 
         # Anomaly detection
-        detector.update_measurement( measurement )                          # Update detector
-        residues = detector.compute_residues()                              # Compute residues
-        alarm    = detector.verify_alarm()                                  # Trigger alarm
-        control.update_alarm(alarm)                                         # Anomaly detection tells the controller if alarm
+        detector.update_measurement( measurement )                              # Update detector
+        residues = detector.compute_residues()                                  # Compute residues
+        alarm    = detector.verify_alarm()                                      # Trigger alarm
+        control.update_alarm(alarm)                                             # Anomaly detection tells the controller if alarm
         detector.estimator.update_alarm(alarm)
-        # Control computation
+        # Attack reconfiguration
         if sum(alarm) == 0:
             u_reconfigure = np.array( np.zeros( input_dimension ) ).reshape(input_dimension)
         if sum(alarm) > 0:
-            # data = measurement
             if reconfiguration == 1 and sum( np.abs(u_reconfigure) ) == 0:
                 u_reconfigure = reconf.reconfigure( uc, measurement, x_prediction, y_previous, y_prediction_previous, t_control )
             elif reconfiguration == 2:
                 u_reconfigure = u_estimated
         # Control computation
-        uc = control.update_u( measurement, u_reconfigure )                             # compute controller
+        uc = control.update_u( measurement, u_reconfigure )                     # compute controller
         ua = uc + 0
         if t_control > 10 and t_control < 60 and attack:
-            ua = uc + np.array( [2, 0] ).reshape(input_dimension)
-        t, x = robot.step( ua )                                                         # system step. Store actual system state
+            ua = uc + np.array( [1, 0] ).reshape(input_dimension)
+        t, x = robot.step( ua )                                                 # system step. Store actual system state
         y_previous = measurement + 0
         y_prediction_previous = x_prediction + 0
 
@@ -177,7 +184,7 @@ def main_multiple_sim():
     ax.set_xlabel( "Time [s]" )
     ax.set_ylabel( "Position $z_1$" )
     plt.grid()
-    # plt.savefig(f'attack_mitigation_w_robot_z1_both.pdf', bbox_inches='tight')
+    # plt.savefig(f'attack_mitigation_v_robot_z1_both.pdf', bbox_inches='tight')
 
     fig, ax = plt.subplots( figsize=(8, 3) )
     ax.plot( time_no_attack, state_no_attack[:, 1], label="NA" )
@@ -189,7 +196,7 @@ def main_multiple_sim():
     ax.set_ylabel( "Position $z_2$" )
     # ax.set_ylim([-2, 4])
     plt.grid()
-    # plt.savefig(f'attack_mitigation_w_robot_z2_both.pdf', bbox_inches='tight')
+    # plt.savefig(f'attack_mitigation_v_robot_z2_both.pdf', bbox_inches='tight')
     plt.show()
 
 if __name__ == "__main__":
